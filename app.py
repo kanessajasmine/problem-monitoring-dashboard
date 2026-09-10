@@ -175,18 +175,50 @@ with col_b:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Detail table
+# Detail table (tabel asli, bukan kartu)
 # ---------------------------------------------------------------------------
 st.subheader("Detail kasus")
 
-for _, row in fdf.sort_values("bulan", key=lambda s: s.map(month_sort_key)).iterrows():
-    color = CAT_COLORS.get(row["problem_category"], "#999999")
-    header = f"{row['bulan']} · {row['customer']} · {row['item']}"
-    with st.expander(header):
-        st.markdown(
-            f"<span class='pill' style='background:{color}22;color:{color};'>{row['problem_category']}</span>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(f"**Masalah**  \n{row['problem']}")
-        st.markdown(f"**Akar masalah**  \n{row['root_cause']}")
-        st.markdown(f"**Rencana tindakan**  \n{row['action_plan']}")
+table_df = fdf.sort_values("bulan", key=lambda s: s.map(month_sort_key)).reset_index(drop=True)
+
+display_cols = ["bulan", "customer", "item", "production_factory", "problem_category", "problem"]
+view_df = table_df[display_cols].rename(columns={
+    "bulan": "Bulan",
+    "customer": "Customer",
+    "item": "Item",
+    "production_factory": "Pabrik",
+    "problem_category": "Kategori",
+    "problem": "Ringkasan masalah",
+})
+
+
+def highlight_category(val):
+    color = CAT_COLORS.get(val, "#999999")
+    return f"background-color: {color}22; color: {color}; font-weight: 500;"
+
+
+styled = view_df.style.applymap(highlight_category, subset=["Kategori"])
+
+event = st.dataframe(
+    styled,
+    use_container_width=True,
+    height=460,
+    hide_index=True,
+    on_select="rerun",
+    selection_mode="single-row",
+)
+
+selected_rows = event.selection.rows if event and event.selection else []
+if selected_rows:
+    sel = table_df.iloc[selected_rows[0]]
+    color = CAT_COLORS.get(sel["problem_category"], "#999999")
+    st.markdown(
+        f"<span class='pill' style='background:{color}22;color:{color};'>{sel['problem_category']}</span>",
+        unsafe_allow_html=True,
+    )
+    d1, d2, d3 = st.columns(3)
+    d1.markdown(f"**Masalah**  \n{sel['problem']}")
+    d2.markdown(f"**Akar masalah**  \n{sel['root_cause']}")
+    d3.markdown(f"**Rencana tindakan**  \n{sel['action_plan']}")
+else:
+    st.caption("Klik salah satu baris di tabel untuk melihat akar masalah dan rencana tindakan.")
