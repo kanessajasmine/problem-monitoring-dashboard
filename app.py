@@ -197,7 +197,7 @@ def highlight_category(val):
     return f"background-color: {color}22; color: {color}; font-weight: 500;"
 
 
-styled = view_df.style.applymap(highlight_category, subset=["Kategori"])
+styled = view_df.style.map(highlight_category, subset=["Kategori"])
 
 event = st.dataframe(
     styled,
